@@ -12,6 +12,11 @@
 
     <div class="flex gap-2 mb-4">
       <input id="symbol" class="flex-1 px-4 py-2 border rounded" placeholder="Enter crypto symbol (e.g. btc)">
+      <select id="timeframe" class="border rounded px-2">
+        <option value="1d">1D</option>
+        <option value="7d">7D</option>
+        <option value="30d" selected>30D</option>
+      </select>
       <button onclick="analyze()" class="bg-blue-600 text-white px-4 py-2 rounded">Analyze</button>
       <button onclick="analyzeTopVolatile()" class="bg-purple-600 text-white px-4 py-2 rounded">Analyze Top Volatile</button>
     </div>
@@ -44,12 +49,15 @@
 
     async function analyze() {
       const rawSymbol = document.getElementById('symbol').value.trim().toLowerCase();
+      const timeframe = document.getElementById('timeframe').value;
       const symbol = SYMBOL_MAP[rawSymbol] || rawSymbol;
 
       showLoading(true);
       try {
-        const res = await fetch(`${API_BASE}/analyze?symbol=${symbol}`);
+        const res = await fetch(`${API_BASE}/analyze?symbol=${symbol}&interval=${timeframe}`);
         const data = await res.json();
+
+        console.log("Dati ricevuti:", data);
 
         if (!res.ok) {
           const msg = data.detail || "Errore interno";
