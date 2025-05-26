@@ -55,7 +55,11 @@
             try {
                 const res = await fetch(`${API_BASE}/analyze-multi`);
                 const data = await res.json();
-                renderBatchAnalysis(data.analysis);
+                if (data.analysis) {
+                    renderBatchAnalysis(data.analysis);
+                } else {
+                    document.getElementById('batchResults').innerHTML = `<p class="text-red-500">Errore: analisi non disponibili</p>`;
+                }
             } catch (err) {
                 document.getElementById('batchResults').innerHTML = `<p class="text-red-500">Errore di rete: ${err.message}</p>`;
             } finally {
