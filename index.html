@@ -18,7 +18,7 @@
 
     <div id="loading" class="text-blue-600 font-semibold hidden">Loading...</div>
     <div id="results" class="bg-white p-4 rounded shadow mb-4"></div>
-    <canvas id="priceChart" class="bg-white rounded shadow mb-4" height="300"></canvas>
+    <canvas id="priceChart" class="bg-white rounded shadow mb-4" height="400"></canvas>
     <div id="batchResults" class="bg-white p-4 rounded shadow mb-4"></div>
     <div id="volatile" class="bg-white p-4 rounded shadow mb-4"></div>
   </div>
@@ -132,9 +132,27 @@
         },
         options: {
           responsive: true,
+          plugins: {
+            tooltip: {
+              mode: 'index',
+              intersect: false
+            },
+            legend: {
+              position: 'top'
+            },
+            title: {
+              display: true,
+              text: 'Prezzo Storico e Indicatori Tecnici'
+            }
+          },
+          interaction: {
+            mode: 'nearest',
+            axis: 'x',
+            intersect: false
+          },
           scales: {
-            x: { display: true },
-            y: { display: true }
+            x: { display: true, title: { display: true, text: 'Data' } },
+            y: { display: true, title: { display: true, text: 'Prezzo ($)' } }
           }
         }
       });
@@ -159,4 +177,3 @@
   </script>
 </body>
 </html>
-
