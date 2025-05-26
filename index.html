@@ -7,124 +7,123 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body class="bg-gray-100 text-gray-800 p-6">
-    <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl font-bold mb-4 text-center">Crypto AI Assistant</h1>
+<div class="max-w-4xl mx-auto">
+    <h1 class="text-3xl font-bold mb-4 text-center">Crypto AI Assistant</h1>
 
-        <div class="flex gap-2 mb-4">
-            <input id="symbol" class="flex-1 px-4 py-2 border rounded" placeholder="Enter crypto symbol (e.g. bitcoin)">
-            <button onclick="analyze()" class="bg-blue-600 text-white px-4 py-2 rounded">Analyze</button>
-            <button onclick="analyzeTopVolatile()" class="bg-purple-600 text-white px-4 py-2 rounded">Analyze Top Volatile</button>
-        </div>
-
-        <div id="loading" class="text-blue-600 font-semibold hidden">Loading...</div>
-
-        <div id="results" class="bg-white p-4 rounded shadow mb-4"></div>
-        <canvas id="priceChart" class="bg-white rounded shadow mb-4" height="300"></canvas>
-        <div id="batchResults" class="bg-white p-4 rounded shadow mb-4"></div>
-        <div id="volatile" class="bg-white p-4 rounded shadow mb-4"></div>
+    <div class="flex gap-2 mb-4">
+        <input id="symbol" class="flex-1 px-4 py-2 border rounded" placeholder="Enter crypto symbol (e.g. btc)">
+        <button onclick="analyze()" class="bg-blue-600 text-white px-4 py-2 rounded">Analyze</button>
+        <button onclick="analyzeTopVolatile()" class="bg-purple-600 text-white px-4 py-2 rounded">Analyze Top Volatile</button>
     </div>
 
-    <script>
-        let chartInstance;
-        const API_BASE = "https://crypto-backend-ew67.onrender.com";
+    <div id="loading" class="text-blue-600 font-semibold hidden">Loading...</div>
 
-        function showLoading(show = true) {
-            document.getElementById('loading').classList.toggle('hidden', !show);
-        }
+    <div id="results" class="bg-white p-4 rounded shadow mb-4"></div>
+    <canvas id="priceChart" class="bg-white rounded shadow mb-4" height="300"></canvas>
+    <div id="batchResults" class="bg-white p-4 rounded shadow mb-4"></div>
+    <div id="volatile" class="bg-white p-4 rounded shadow mb-4"></div>
+</div>
 
-        async function analyze() {
-            const symbol = document.getElementById('symbol').value;
-            showLoading(true);
-            try {
-                const res = await fetch(`${API_BASE}/analyze?symbol=${symbol}`);
-                const data = await res.json();
-                if (data.error) {
-                    document.getElementById('results').innerHTML = `<p class="text-red-500">${data.error}</p>`;
-                } else {
-                    renderAnalysis(data);
-                }
-            } catch (err) {
-                document.getElementById('results').innerHTML = `<p class="text-red-500">Errore di rete: ${err.message}</p>`;
-            } finally {
-                showLoading(false);
+<script>
+    let chartInstance;
+    const API_BASE = "https://crypto-backend-ew67.onrender.com";
+
+    function showLoading(show = true) {
+        document.getElementById('loading').classList.toggle('hidden', !show);
+    }
+
+    async function analyze() {
+        const symbol = document.getElementById('symbol').value.trim();
+        showLoading(true);
+        try {
+            const res = await fetch(`${API_BASE}/analyze?symbol=${symbol}`);
+            const data = await res.json();
+            if (!res.ok) {
+                document.getElementById('results').innerHTML = `<p class="text-red-500">Errore: ${data.detail || "Errore interno"}</p>`;
+                return;
             }
+            renderAnalysis(data);
+        } catch (err) {
+            document.getElementById('results').innerHTML = `<p class="text-red-500">Errore di rete: ${err.message}</p>`;
+        } finally {
+            showLoading(false);
         }
+    }
 
-        async function analyzeTopVolatile() {
-            showLoading(true);
-            try {
-                const res = await fetch(`${API_BASE}/analyze-multi`);
-                const data = await res.json();
-                if (data.analysis) {
-                    renderBatchAnalysis(data.analysis);
-                } else {
-                    document.getElementById('batchResults').innerHTML = `<p class="text-red-500">Errore: analisi non disponibili</p>`;
-                }
-            } catch (err) {
-                document.getElementById('batchResults').innerHTML = `<p class="text-red-500">Errore di rete: ${err.message}</p>`;
-            } finally {
-                showLoading(false);
+    async function analyzeTopVolatile() {
+        showLoading(true);
+        try {
+            const res = await fetch(`${API_BASE}/analyze-multi`);
+            const data = await res.json();
+            if (!res.ok || !data.analysis) {
+                document.getElementById('batchResults').innerHTML = `<p class="text-red-500">Errore: analisi non disponibili</p>`;
+                return;
             }
+            renderBatchAnalysis(data.analysis);
+        } catch (err) {
+            document.getElementById('batchResults').innerHTML = `<p class="text-red-500">Errore di rete: ${err.message}</p>`;
+        } finally {
+            showLoading(false);
         }
+    }
 
-        function renderAnalysis(data) {
-            document.getElementById('results').innerHTML = `
-                <h2 class="text-xl font-bold mb-2">Analisi per ${data.symbol}</h2>
-                <div class="grid grid-cols-2 gap-2 text-sm">
-                    <p><strong>Prezzo:</strong> $${data.price}</p>
-                    <p><strong>RSI:</strong> ${data.rsi}</p>
-                    <p><strong>MACD:</strong> ${data.macd}</p>
-                    <p><strong>Segnale:</strong> ${data.signal}</p>
-                    <p><strong>SMA:</strong> ${data.sma}</p>
-                    <p><strong>EMA:</strong> ${data.ema}</p>
-                    <p><strong>Supporto:</strong> ${data.support}</p>
-                    <p><strong>Resistenza:</strong> ${data.resistance}</p>
-                </div>
-                <h3 class="mt-4 font-semibold">Riassunto GPT</h3>
-                <pre class="bg-gray-100 p-2 rounded">${data.gpt_summary}</pre>
-                <h3 class="mt-4 font-semibold">Notizie</h3>
-                <ul class="list-disc list-inside">${data.news.map(n => `<li><a class="text-blue-600 underline" href="${n.url}" target="_blank">${n.title}</a> (${n.source})</li>`).join("")}</ul>
-            `;
-            drawChart(data.history.dates, data.history.prices, data.history.sma, data.history.bb_upper, data.history.bb_lower);
-        }
+    function renderAnalysis(data) {
+        document.getElementById('results').innerHTML = `
+            <h2 class="text-xl font-bold mb-2">Analisi per ${data.symbol.toUpperCase()}</h2>
+            <div class="grid grid-cols-2 gap-2 text-sm">
+                <p><strong>Prezzo:</strong> $${data.price}</p>
+                <p><strong>RSI:</strong> ${data.rsi ?? '-'}</p>
+                <p><strong>MACD:</strong> ${data.macd ?? '-'}</p>
+                <p><strong>Segnale:</strong> ${data.signal ?? '-'}</p>
+                <p><strong>SMA:</strong> ${data.sma ?? '-'}</p>
+                <p><strong>EMA:</strong> ${data.ema ?? '-'}</p>
+                <p><strong>Supporto:</strong> ${data.support}</p>
+                <p><strong>Resistenza:</strong> ${data.resistance}</p>
+            </div>
+            <h3 class="mt-4 font-semibold">Riassunto GPT</h3>
+            <pre class="bg-gray-100 p-2 rounded">${data.gpt_summary}</pre>
+        `;
+        drawChart(data.history.dates, data.history.prices, data.history.sma, data.history.bb_upper, data.history.bb_lower);
+    }
 
-        function renderBatchAnalysis(analyses) {
-            document.getElementById('batchResults').innerHTML = `
-                <h2 class="text-xl font-bold mb-4">Top Volatile Crypto Analyses</h2>
-                ${analyses.map(d => d.error ?
-                    `<div class="mb-4 text-red-600"><strong>${d.symbol.toUpperCase()}:</strong> ${d.error}</div>` :
-                    `<div class="mb-4 border-b pb-2">
-                        <h3 class="font-semibold">${d.symbol.toUpperCase()}</h3>
-                        <p><strong>Prezzo:</strong> $${d.price}</p>
-                        <p><strong>RSI:</strong> ${d.rsi} | <strong>MACD:</strong> ${d.macd}</p>
-                        <p><strong>Supporto:</strong> ${d.support}, <strong>Resistenza:</strong> ${d.resistance}</p>
-                        <pre class="bg-gray-100 p-2 rounded">${d.gpt_summary}</pre>
-                    </div>`).join("")}
-            `;
-        }
+    function renderBatchAnalysis(analyses) {
+        document.getElementById('batchResults').innerHTML = `
+            <h2 class="text-xl font-bold mb-4">Top Volatile Crypto Analyses</h2>
+            ${analyses.map(d => d.error ?
+                `<div class="mb-4 text-red-600"><strong>${d.symbol.toUpperCase()}:</strong> ${d.error}</div>` :
+                `<div class="mb-4 border-b pb-2">
+                    <h3 class="font-semibold">${d.symbol.toUpperCase()}</h3>
+                    <p><strong>Prezzo:</strong> $${d.price}</p>
+                    <p><strong>RSI:</strong> ${d.rsi ?? '-'} | <strong>MACD:</strong> ${d.macd ?? '-'}</p>
+                    <p><strong>Supporto:</strong> ${d.support}, <strong>Resistenza:</strong> ${d.resistance}</p>
+                    <pre class="bg-gray-100 p-2 rounded">${d.gpt_summary}</pre>
+                </div>`).join("")}
+        `;
+    }
 
-        function drawChart(dates, prices, sma, upperBand, lowerBand) {
-            const ctx = document.getElementById('priceChart').getContext('2d');
-            if (chartInstance) chartInstance.destroy();
-            chartInstance = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: dates,
-                    datasets: [
-                        { label: 'Prezzo', data: prices, borderColor: 'black', fill: false },
-                        { label: 'SMA', data: sma, borderColor: 'blue', fill: false },
-                        { label: 'Bollinger Upper', data: upperBand, borderColor: 'green', borderDash: [5, 5], fill: false },
-                        { label: 'Bollinger Lower', data: lowerBand, borderColor: 'red', borderDash: [5, 5], fill: false }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    scales: { x: { display: true }, y: { display: true } }
-                }
-            });
-        }
+    function drawChart(dates, prices, sma, upperBand, lowerBand) {
+        const ctx = document.getElementById('priceChart').getContext('2d');
+        if (chartInstance) chartInstance.destroy();
+        chartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: dates,
+                datasets: [
+                    { label: 'Prezzo', data: prices, borderColor: 'black', fill: false },
+                    { label: 'SMA', data: sma, borderColor: 'blue', fill: false },
+                    { label: 'Bollinger Upper', data: upperBand, borderColor: 'green', borderDash: [5, 5], fill: false },
+                    { label: 'Bollinger Lower', data: lowerBand, borderColor: 'red', borderDash: [5, 5], fill: false }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: { x: { display: true }, y: { display: true } }
+            }
+        });
+    }
 
-        async function getVolatile() {
+    async function getVolatile() {
+        try {
             const res = await fetch(`${API_BASE}/market-scan`);
             const data = await res.json();
             document.getElementById('volatile').innerHTML = `
@@ -133,9 +132,12 @@
                     ${data.top_volatile.map(c => `<li>${c.name} (${c.symbol.toUpperCase()}): ${c.volatility_score.toFixed(2)}%</li>`).join("")}
                 </ul>
             `;
+        } catch (err) {
+            document.getElementById('volatile').innerHTML = `<p class="text-red-500">Errore di rete: ${err.message}</p>`;
         }
+    }
 
-        getVolatile();
-    </script>
+    getVolatile();
+</script>
 </body>
 </html>
